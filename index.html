@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Schedule Tracker</title>
+  <title>Daily Schedule & To-Do</title>
 
   <!-- Tailwind CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    body { box-sizing: border-box; }
+    body { box-sizing: border-box; overflow-x: hidden; }
     .task-item { transition: all .3s ease; background: rgba(30,41,59,.8); border:1px solid rgba(71,85,105,.3); }
     .task-item:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,.3); background:rgba(30,41,59,.9); }
     .completed { opacity:.6; text-decoration:line-through; background:rgba(15,23,42,.6); }
@@ -23,198 +23,282 @@
     .btn-secondary:hover{background:linear-gradient(135deg,#047857,#065f46);box-shadow:0 8px 20px rgba(16,185,129,.4);}
     .progress-bar{background:linear-gradient(90deg,#3b82f6,#8b5cf6);}
     @view-transition { navigation: auto; }
+
+    /* ==== TO-DO LIST ==== */
+    .todo-container { background: #0d1b2a; padding: 20px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow:0 5px 15px rgba(0,0,0,0.3); margin:20px auto; }
+    .input-group { display: flex; margin-bottom: 10px; }
+    #taskInput { flex: 1; padding: 10px; border-radius: 10px 0 0 10px; border:none; outline:none; background: #1e3c72; color:#fff; }
+    #addBtn { padding:10px 20px; border:none; background:#ffce00; color:#0d1b2a; font-weight:bold; border-radius:0 10px 10px 0; cursor:pointer; transition:0.3s; }
+    #addBtn:hover { background:#ffd600; }
+    #tasksContainer { display:flex; flex-direction:column; width:90%; max-width:500px; margin:0 auto; }
+    .todo-task { background: #2a5298; padding:10px; margin-bottom:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; color:#fff; transform:translateY(-20px); opacity:0; transition: all 0.4s ease; }
+    .todo-task.show { transform:translateY(0); opacity:1; }
+    .todo-task.completed { text-decoration: line-through; color: #90ee90; }
+    .done-btn { background:#22c55e; border:none; color:#fff; padding:5px 10px; border-radius:8px; cursor:pointer; margin-left:10px; transition:0.3s; }
+    .done-btn:hover { background:#16a34a; }
+
+    /* ==== BACKGROUND CANVAS ==== */
+    #bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
+
+    /* ==== ICON HOVER ==== */
+    .btn-primary svg, .btn-secondary svg, .bg-yellow-500 svg {
+      transition: transform 0.3s ease;
+    }
+    .btn-primary:hover svg, .btn-secondary:hover svg, .bg-yellow-500:hover svg {
+      transform: scale(1.15);
+    }
+
+    /* ==== MAIN MENU CENTERING ==== */
+    #main-menu { animation: fadeInUp 0.8s ease-out; }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-slate-100 flex items-center justify-center p-4">
+<!-- BODY: removed justify-start and padding to allow full centering -->
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-slate-100 p-0">
 
-  <!-- ==== MAIN MENU (centered card) ==== -->
-  <section id="main-menu" class="w-full max-w-2xl mx-auto bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 fade-in text-center">
+  <canvas id="bgCanvas"></canvas>
 
-    <!-- Title -->
-    <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-slate-100 mb-10 drop-shadow-lg">
-      Daily Routine
-    </h1>
+  <!-- MAIN MENU - PERFECTLY CENTERED -->
+  <section id="main-menu" class="w-full min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl mx-auto bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 fade-in text-center">
+      <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-slate-100 mb-12 drop-shadow-lg">Daily Routine</h1>
+      <div class="grid md:grid-cols-3 gap-6 max-w-lg mx-auto">
+        <!-- College Day -->
+        <button onclick="showRoutine('college')" class="btn-primary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all">
+          <svg class="w-10 h-10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h-4m-6 0H5m7-7h.01M12 9h.01M12 13h.01"></path>
+          </svg>
+          College Day
+        </button>
 
-    <!-- Buttons – perfectly centered grid -->
-    <div class="grid md:grid-cols-2 gap-6">
+        <!-- Holiday -->
+        <button onclick="showRoutine('holiday')" class="btn-secondary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all">
+          <svg class="w-10 h-10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Holiday
+        </button>
 
-      <!-- College Day -->
-      <button onclick="showRoutine('college')"
-              class="btn-primary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-        <!-- Icon -->
-        <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422A12.083 12.083 0 0112 21a12.083 12.083 0 01-6.16-10.422L12 14z"/>
-        </svg>
-        <div class="text-xl">College Day</div>
-        <div class="text-sm opacity-90 mt-1">Regular school schedule</div>
-      </button>
-
-      <!-- Holiday -->
-      <button onclick="showRoutine('holiday')"
-              class="btn-secondary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
-        <!-- Icon -->
-        <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-        </svg>
-        <div class="text-xl">Holiday</div>
-        <div class="text-sm opacity-90 mt-1">Free day schedule</div>
-      </button>
-
+        <!-- To-Do List -->
+        <button onclick="showTodoList()" class="bg-yellow-500 hover:bg-yellow-400 flex flex-col items-center justify-center text-black font-semibold py-8 px-6 rounded-xl shadow-lg transition-all">
+          <svg class="w-10 h-10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+          </svg>
+          To-Do List
+        </button>
+      </div>
     </div>
   </section>
 
-  <!-- ==== COLLEGE ROUTINE ==== -->
-  <section id="college-routine" class="hidden fade-in w-full max-w-2xl mx-auto">
+  <!-- COLLEGE ROUTINE -->
+  <section id="college-routine" class="hidden fade-in w-full max-w-2xl mx-auto mt-6">
     <div class="flex items-center justify-between mb-8">
-      <h1 id="college-title" class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's College Routine</h1>
+      <h1 class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's College Routine</h1>
       <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600">Back</button>
     </div>
     <div id="college-tasks" class="space-y-4"></div>
     <div class="mt-8 text-center"><div id="college-progress" class="text-lg font-semibold text-slate-200"></div></div>
   </section>
 
-  <!-- ==== HOLIDAY ROUTINE ==== -->
-  <section id="holiday-routine" class="hidden fade-in w-full max-w-2xl mx-auto">
+  <!-- HOLIDAY ROUTINE -->
+  <section id="holiday-routine" class="hidden fade-in w-full max-w-2xl mx-auto mt-6">
     <div class="flex items-center justify-between mb-8">
-      <h1 id="holiday-title" class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's Holiday Routine</h1>
+      <h1 class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's Holiday Routine</h1>
       <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600">Back</button>
     </div>
     <div id="holiday-tasks" class="space-y-4"></div>
     <div class="mt-8 text-center"><div id="holiday-progress" class="text-lg font-semibold text-slate-200"></div></div>
   </section>
 
-</body>
-</html>
-
-<script>
-/* ---------- CONFIG ---------- */
-const defaultConfig = {
-  main_title: "Daily Routine",
-  college_title: "Today's College Routine",
-  holiday_title: "Today's Holiday Routine",
-  primary_color: "#1e40af",
-  secondary_color: "#059669"
-};
-
-/* ---------- DATA ---------- */
-const collegeRoutine = [
-  { id: 'c1', time: '6:30 - 7:00 AM', task: 'Wake up and fresh up' },
-  { id: 'c2', time: '7:00 - 9:20 AM', task: 'Study (Reading and Assignments)' },
-  { id: 'c3', time: '9:30 - 10:00 AM', task: 'Breakfast and ready for school' },
-  { id: 'c4', time: '10:00 AM - 4:45 PM', task: 'College time' },
-  { id: 'c5', time: '4:45 - 5:30 PM', task: 'Rest and lunch time' },
-  { id: 'c6', time: '5:30 - 7:00 PM', task: 'Engineering practice time' },
-  { id: 'c7', time: '7:00 - 7:45 PM', task: 'Homework time' },
-  { id: 'c8', time: '7:45 - 8:45 PM', task: 'Dinner time' },
-  { id: 'c9', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
-  { id: 'c10', time: '10:45 - 11:00 PM', task: 'Break time' },
-  { id: 'c11', time: '11:00 PM', task: 'Sleeping time' }
-];
-
-const holidayRoutine = [
-  { id: 'h1', time: '7:00 - 7:30 AM', task: 'Wake up and fresh up' },
-  { id: 'h2', time: '7:30 - 10:30 AM', task: 'Study (homework and assignment)' },
-  { id: 'h3', time: '10:30 - 11:30 AM', task: 'Breakfast time' },
-  { id: 'h4', time: '11:30 AM - 1:00 PM', task: 'Engineering practice' },
-  { id: 'h5', time: '1:00 - 1:15 PM', task: 'Short break' },
-  { id: 'h6', time: '1:15 - 4:00 PM', task: 'Study (Reading and Assignments)' },
-  { id: 'h7', time: '4:00 - 4:45 PM', task: 'Lunch' },
-  { id: 'h8', time: '4:45 - 6:15 PM', task: 'Engineering practice' },
-  { id: 'h9', time: '6:15 - 6:30 PM', task: 'Short rest' },
-  { id: 'h10', time: '6:30 - 7:45 PM', task: 'Study (Reading and Assignments)' },
-  { id: 'h11', time: '7:45 - 8:45 PM', task: 'Dinner' },
-  { id: 'h12', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
-  { id: 'h13', time: '10:45 - 11:00 PM', task: 'Break' },
-  { id: 'h14', time: '11:00 PM', task: 'Sleep' }
-];
-
-/* ---------- STATE (localStorage) ---------- */
-let currentData = [];
-const STORAGE_KEY = 'daily-routine-data';
-function load(){ try{ currentData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }catch{ currentData=[]; } }
-function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData)); }
-load();
-
-/* ---------- UI ---------- */
-let currentRoutineType = '';
-let isLoading = false;
-
-function showRoutine(type){
-  currentRoutineType = type;
-  document.getElementById('main-menu').classList.add('hidden');
-  document.getElementById('college-routine').classList.toggle('hidden', type!=='college');
-  document.getElementById('holiday-routine').classList.toggle('hidden', type!=='holiday');
-  renderTasks(type, type==='college'?collegeRoutine:holidayRoutine);
-  updateProgress(type);
-}
-function showMainMenu(){
-  document.getElementById('main-menu').classList.remove('hidden');
-  document.getElementById('college-routine').classList.add('hidden');
-  document.getElementById('holiday-routine').classList.add('hidden');
-  currentRoutineType = '';
-}
-
-/* ---------- RENDER ---------- */
-function renderTasks(type, tasks){
-  const container = document.getElementById(`${type}-tasks`);
-  const today = new Date().toDateString();
-  container.innerHTML = tasks.map(t=>{
-    const done = currentData.some(d=>d.routine_type===type && d.task_id===t.id && d.completed && d.date===today);
-    return `
-      <div class="task-item rounded-lg p-4 shadow-lg border-l-4 border-blue-400 ${done?'completed':''}">
-        <div class="flex items-center space-x-4">
-          <input type="checkbox" class="checkbox" ${done?'checked':''}
-                 onchange="toggleTask('${type}','${t.id}',this.checked)">
-          <div class="flex-1">
-            <div class="font-semibold text-blue-300 text-sm">${t.time}</div>
-            <div class="text-slate-200 mt-1">${t.task}</div>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-/* ---------- TOGGLE ---------- */
-async function toggleTask(routineType, taskId, completed){
-  if(isLoading) return; isLoading=true;
-  const today = new Date().toDateString();
-  const idx = currentData.findIndex(d=>d.routine_type===routineType && d.task_id===taskId && d.date===today);
-  if(idx>-1){
-    currentData[idx].completed = completed;
-  }else if(completed){
-    currentData.push({routine_type:routineType, task_id:taskId, completed:true, date:today});
-  }
-  save();
-  renderTasks(routineType, routineType==='college'?collegeRoutine:holidayRoutine);
-  updateProgress(routineType);
-  isLoading=false;
-}
-
-/* ---------- PROGRESS ---------- */
-function updateProgress(type){
-  const tasks = type==='college'?collegeRoutine:holidayRoutine;
-  const today = new Date().toDateString();
-  const done = currentData.filter(d=>d.routine_type===type && d.completed && d.date===today).length;
-  const total = tasks.length;
-  const pct = total?Math.round(done/total*100):0;
-  const el = document.getElementById(`${type}-progress`);
-  el.innerHTML = `
-    <div class="mb-2 text-slate-200">Progress: ${done}/${total} tasks completed</div>
-    <div class="w-full bg-slate-700 rounded-full h-3 border border-slate-600">
-      <div class="progress-bar h-3 rounded-full transition-all duration-500" style="width:${pct}%"></div>
+  <!-- TO-DO LIST -->
+  <section id="todo-section" class="hidden w-full max-w-2xl mx-auto mt-6 fade-in">
+    <h1 class="text-3xl font-bold text-yellow-400 mb-4 text-center">To-Do List</h1>
+    <div class="todo-container">
+      <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Add a new task..." />
+        <button id="addBtn">Add</button>
+      </div>
     </div>
-    <div class="mt-2 text-sm text-slate-300">${pct}% Complete</div>`;
-}
+    <div id="tasksContainer"></div>
+    <div class="text-center mt-4">
+      <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg border border-slate-600">Back</button>
+    </div>
+  </section>
 
-/* ---------- THEME (optional) ---------- */
-function applyConfig(cfg){
-  document.getElementById('main-title').textContent = cfg.main_title||defaultConfig.main_title;
-  document.getElementById('college-title').textContent = cfg.college_title||defaultConfig.college_title;
-  document.getElementById('holiday-title').textContent = cfg.holiday_title||defaultConfig.holiday_title;
-}
-applyConfig(defaultConfig);
-</script>
+  <script>
+    /* ---------- DATA ---------- */
+    const collegeRoutine = [
+      { id: 'c1', time: '6:30 - 7:00 AM', task: 'Wake up and fresh up' },
+      { id: 'c2', time: '7:00 - 9:20 AM', task: 'Study (Reading and Assignments)' },
+      { id: 'c3', time: '9:30 - 10:00 AM', task: 'Breakfast and ready for school' },
+      { id: 'c4', time: '10:00 AM - 4:45 PM', task: 'College time' },
+      { id: 'c5', time: '4:45 - 5:30 PM', task: 'Rest and lunch time' },
+      { id: 'c6', time: '5:30 - 7:00 PM', task: 'Engineering practice time' },
+      { id: 'c7', time: '7:00 - 7:45 PM', task: 'Homework time' },
+      { id: 'c8', time: '7:45 - 8:45 PM', task: 'Dinner time' },
+      { id: 'c9', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
+      { id: 'c10', time: '10:45 - 11:00 PM', task: 'Break time' },
+      { id: 'c11', time: '11:00 PM', task: 'Sleeping time' }
+    ];
+    const holidayRoutine = [
+      { id: 'h1', time: '7:00 - 7:30 AM', task: 'Wake up and fresh up' },
+      { id: 'h2', time: '7:30 - 10:30 AM', task: 'Study (homework and assignment)' },
+      { id: 'h3', time: '10:30 - 11:30 AM', task: 'Breakfast time' },
+      { id: 'h4', time: '11:30 AM - 1:00 PM', task: 'Engineering practice' },
+      { id: 'h5', time: '1:00 - 1:15 PM', task: 'Short break' },
+      { id: 'h6', time: '1:15 - 4:00 PM', task: 'Study (Reading and Assignments)' },
+      { id: 'h7', time: '4:00 - 4:45 PM', task: 'Lunch' },
+      { id: 'h8', time: '4:45 - 6:15 PM', task: 'Engineering practice' },
+      { id: 'h9', time: '6:15 - 6:30 PM', task: 'Short rest' },
+      { id: 'h10', time: '6:30 - 7:45 PM', task: 'Study (Reading and Assignments)' },
+      { id: 'h11', time: '7:45 - 8:45 PM', task: 'Dinner' },
+      { id: 'h12', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
+      { id: 'h13', time: '10:45 - 11:00 PM', task: 'Break' },
+      { id: 'h14', time: '11:00 PM', task: 'Sleep' }
+    ];
+
+    /* ---------- STATE ---------- */
+    let currentData = [];
+    const STORAGE_KEY = 'daily-routine-data';
+    const today = new Date().toDateString();
+    try { currentData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { currentData = []; }
+    currentData = currentData.filter(d => d.date === today);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+
+    /* ---------- SHOW/HIDE ---------- */
+    let currentRoutineType = '';
+    function showRoutine(type) {
+      currentRoutineType = type;
+      document.getElementById('main-menu').classList.add('hidden');
+      document.getElementById('college-routine').classList.toggle('hidden', type !== 'college');
+      document.getElementById('holiday-routine').classList.toggle('hidden', type !== 'holiday');
+      document.getElementById('todo-section').classList.add('hidden');
+      renderTasks(type, type === 'college' ? collegeRoutine : holidayRoutine);
+      updateProgress(type);
+    }
+    function showMainMenu() {
+      document.getElementById('main-menu').classList.remove('hidden');
+      document.getElementById('college-routine').classList.add('hidden');
+      document.getElementById('holiday-routine').classList.add('hidden');
+      document.getElementById('todo-section').classList.add('hidden');
+      currentRoutineType = '';
+    }
+    function showTodoList() {
+      document.getElementById('main-menu').classList.add('hidden');
+      document.getElementById('college-routine').classList.add('hidden');
+      document.getElementById('holiday-routine').classList.add('hidden');
+      document.getElementById('todo-section').classList.remove('hidden');
+    }
+
+    /* ---------- RENDER ROUTINE TASKS ---------- */
+    function renderTasks(type, tasks) {
+      const container = document.getElementById(`${type}-tasks`);
+      container.innerHTML = tasks.map(t => {
+        const done = currentData.some(d => d.routine_type === type && d.task_id === t.id && d.completed && d.date === today);
+        return `<div class="task-item rounded-lg p-4 shadow-lg border-l-4 border-blue-400 ${done ? 'completed' : ''}">
+          <div class="flex items-center space-x-4">
+            <input type="checkbox" class="checkbox" ${done ? 'checked' : ''}
+              onchange="toggleTask('${type}','${t.id}',this.checked)">
+            <div class="flex-1">
+              <div class="font-semibold text-blue-300 text-sm">${t.time}</div>
+              <div class="text-slate-200 mt-1">${t.task}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    function toggleTask(routineType, taskId, completed) {
+      const idx = currentData.findIndex(d => d.routine_type === routineType && d.task_id === taskId && d.date === today);
+      if (idx > -1) currentData[idx].completed = completed;
+      else if (completed) currentData.push({ routine_type: routineType, task_id: taskId, completed: true, date: today });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+      renderTasks(routineType, routineType === 'college' ? collegeRoutine : holidayRoutine);
+      updateProgress(routineType);
+    }
+    function updateProgress(type) {
+      const tasks = type === 'college' ? collegeRoutine : holidayRoutine;
+      const done = currentData.filter(d => d.routine_type === type && d.completed && d.date === today).length;
+      const total = tasks.length;
+      const pct = total ? Math.round(done / total * 100) : 0;
+      const el = document.getElementById(`${type}-progress`);
+      el.innerHTML = `
+        <div class="mb-2 text-slate-200">Progress: ${done}/${total} tasks completed</div>
+        <div class="w-full bg-slate-700 rounded-full h-3 border border-slate-600">
+          <div class="progress-bar h-3 w-[${pct}%] rounded-full transition-all duration-500"></div>
+        </div>
+        <div class="mt-2 text-sm text-slate-300">${pct}% Complete</div>`;
+    }
+
+    /* ---------- TO-DO LIST ---------- */
+    const taskInput = document.getElementById('taskInput');
+    const addBtn = document.getElementById('addBtn');
+    const tasksContainer = document.getElementById('tasksContainer');
+    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+    function saveTasks() { localStorage.setItem('tasks', JSON.stringify(tasks)); }
+    function renderTodoTasks() {
+      tasksContainer.innerHTML = '';
+      if (tasks.length === 0) { tasksContainer.style.display = 'none'; return; }
+      tasksContainer.style.display = 'flex';
+      tasks.forEach((task, index) => {
+        const div = document.createElement('div');
+        div.className = 'todo-task' + (task.completed ? ' completed' : '');
+        div.innerHTML = `${task.text} <button class='done-btn'>Done</button>`;
+        tasksContainer.appendChild(div);
+        setTimeout(() => div.classList.add('show'), 50 * (index + 1));
+
+        const doneBtn = div.querySelector('.done-btn');
+        doneBtn.addEventListener('click', () => {
+          tasks.splice(index, 1); saveTasks(); renderTodoTasks();
+        });
+        div.addEventListener('click', e => {
+          if (e.target !== doneBtn) { task.completed = !task.completed; saveTasks(); renderTodoTasks(); }
+        });
+      });
+    }
+    function addTask() {
+      const text = taskInput.value.trim();
+      if (!text) return;
+      tasks.push({ text, completed: false }); saveTasks(); renderTodoTasks(); taskInput.value = '';
+    }
+    addBtn.addEventListener('click', addTask);
+    taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
+    renderTodoTasks();
+
+    /* ---------- BACKGROUND PARTICLES ---------- */
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const particles = [];
+    const particleCount = 120;
+    for (let i = 0; i < particleCount; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 3 + 1,
+        dx: (Math.random() - 0.5) * 1.5,
+        dy: (Math.random() - 0.5) * 1.5
+      });
+    }
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.x += p.dx; p.y += p.dy;
+        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255, 206, 0, 0.6)';
+        ctx.fill();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+  </script>
+</body>
 </html>
