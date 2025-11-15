@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Schedule Tracker</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    body { box-sizing: border-box; }
+    .task-item { transition: all .3s ease; background: rgba(30,41,59,.8); border:1px solid rgba(71,85,105,.3); }
+    .task-item:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,.3); background:rgba(30,41,59,.9); }
+    .completed { opacity:.6; text-decoration:line-through; background:rgba(15,23,42,.6); }
+    .checkbox { width:20px;height:20px;cursor:pointer;transition:all .2s ease; accent-color:#3b82f6; }
+    .checkbox:checked{transform:scale(1.1);}
+    .fade-in{animation:fadeIn .5s ease-in;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    .btn-primary{background:linear-gradient(135deg,#1e40af,#3730a3);border:1px solid rgba(59,130,246,.3);}
+    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(59,130,246,.4);background:linear-gradient(135deg,#1d4ed8,#4338ca);}
+    .btn-secondary{background:linear-gradient(135deg,#059669,#047857);border:1px solid rgba(16,185,129,.3);}
+    .btn-secondary:hover{background:linear-gradient(135deg,#047857,#065f46);box-shadow:0 8px 20px rgba(16,185,129,.4);}
+    .progress-bar{background:linear-gradient(90deg,#3b82f6,#8b5cf6);}
+    @view-transition { navigation: auto; }
+  </style>
+</head>
+
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-slate-100 flex items-center justify-center p-4">
+
+  <!-- ==== MAIN MENU (centered card) ==== -->
+  <section id="main-menu" class="w-full max-w-2xl mx-auto bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 fade-in text-center">
+
+    <!-- Title -->
+    <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-slate-100 mb-10 drop-shadow-lg">
+      Daily Routine
+    </h1>
+
+    <!-- Buttons – perfectly centered grid -->
+    <div class="grid md:grid-cols-2 gap-6">
+
+      <!-- College Day -->
+      <button onclick="showRoutine('college')"
+              class="btn-primary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+        <!-- Icon -->
+        <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 14l9-5-9-5-9 5 9 5z M12 14l6.16-3.422A12.083 12.083 0 0112 21a12.083 12.083 0 01-6.16-10.422L12 14z"/>
+        </svg>
+        <div class="text-xl">College Day</div>
+        <div class="text-sm opacity-90 mt-1">Regular school schedule</div>
+      </button>
+
+      <!-- Holiday -->
+      <button onclick="showRoutine('holiday')"
+              class="btn-secondary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+        <!-- Icon -->
+        <svg class="w-12 h-12 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+        </svg>
+        <div class="text-xl">Holiday</div>
+        <div class="text-sm opacity-90 mt-1">Free day schedule</div>
+      </button>
+
+    </div>
+  </section>
+
+  <!-- ==== COLLEGE ROUTINE ==== -->
+  <section id="college-routine" class="hidden fade-in w-full max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h1 id="college-title" class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's College Routine</h1>
+      <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600">Back</button>
+    </div>
+    <div id="college-tasks" class="space-y-4"></div>
+    <div class="mt-8 text-center"><div id="college-progress" class="text-lg font-semibold text-slate-200"></div></div>
+  </section>
+
+  <!-- ==== HOLIDAY ROUTINE ==== -->
+  <section id="holiday-routine" class="hidden fade-in w-full max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h1 id="holiday-title" class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's Holiday Routine</h1>
+      <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600">Back</button>
+    </div>
+    <div id="holiday-tasks" class="space-y-4"></div>
+    <div class="mt-8 text-center"><div id="holiday-progress" class="text-lg font-semibold text-slate-200"></div></div>
+  </section>
+
+</body>
+</html>
+
+<script>
+/* ---------- CONFIG ---------- */
+const defaultConfig = {
+  main_title: "Daily Routine",
+  college_title: "Today's College Routine",
+  holiday_title: "Today's Holiday Routine",
+  primary_color: "#1e40af",
+  secondary_color: "#059669"
+};
+
+/* ---------- DATA ---------- */
+const collegeRoutine = [
+  { id: 'c1', time: '6:30 - 7:00 AM', task: 'Wake up and fresh up' },
+  { id: 'c2', time: '7:00 - 9:20 AM', task: 'Study (Reading and Assignments)' },
+  { id: 'c3', time: '9:30 - 10:00 AM', task: 'Breakfast and ready for school' },
+  { id: 'c4', time: '10:00 AM - 4:45 PM', task: 'College time' },
+  { id: 'c5', time: '4:45 - 5:30 PM', task: 'Rest and lunch time' },
+  { id: 'c6', time: '5:30 - 7:00 PM', task: 'Engineering practice time' },
+  { id: 'c7', time: '7:00 - 7:45 PM', task: 'Homework time' },
+  { id: 'c8', time: '7:45 - 8:45 PM', task: 'Dinner time' },
+  { id: 'c9', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
+  { id: 'c10', time: '10:45 - 11:00 PM', task: 'Break time' },
+  { id: 'c11', time: '11:00 PM', task: 'Sleeping time' }
+];
+
+const holidayRoutine = [
+  { id: 'h1', time: '7:00 - 7:30 AM', task: 'Wake up and fresh up' },
+  { id: 'h2', time: '7:30 - 10:30 AM', task: 'Study (homework and assignment)' },
+  { id: 'h3', time: '10:30 - 11:30 AM', task: 'Breakfast time' },
+  { id: 'h4', time: '11:30 AM - 1:00 PM', task: 'Engineering practice' },
+  { id: 'h5', time: '1:00 - 1:15 PM', task: 'Short break' },
+  { id: 'h6', time: '1:15 - 4:00 PM', task: 'Study (Reading and Assignments)' },
+  { id: 'h7', time: '4:00 - 4:45 PM', task: 'Lunch' },
+  { id: 'h8', time: '4:45 - 6:15 PM', task: 'Engineering practice' },
+  { id: 'h9', time: '6:15 - 6:30 PM', task: 'Short rest' },
+  { id: 'h10', time: '6:30 - 7:45 PM', task: 'Study (Reading and Assignments)' },
+  { id: 'h11', time: '7:45 - 8:45 PM', task: 'Dinner' },
+  { id: 'h12', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
+  { id: 'h13', time: '10:45 - 11:00 PM', task: 'Break' },
+  { id: 'h14', time: '11:00 PM', task: 'Sleep' }
+];
+
+/* ---------- STATE (localStorage) ---------- */
+let currentData = [];
+const STORAGE_KEY = 'daily-routine-data';
+function load(){ try{ currentData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }catch{ currentData=[]; } }
+function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData)); }
+load();
+
+/* ---------- UI ---------- */
+let currentRoutineType = '';
+let isLoading = false;
+
+function showRoutine(type){
+  currentRoutineType = type;
+  document.getElementById('main-menu').classList.add('hidden');
+  document.getElementById('college-routine').classList.toggle('hidden', type!=='college');
+  document.getElementById('holiday-routine').classList.toggle('hidden', type!=='holiday');
+  renderTasks(type, type==='college'?collegeRoutine:holidayRoutine);
+  updateProgress(type);
+}
+function showMainMenu(){
+  document.getElementById('main-menu').classList.remove('hidden');
+  document.getElementById('college-routine').classList.add('hidden');
+  document.getElementById('holiday-routine').classList.add('hidden');
+  currentRoutineType = '';
+}
+
+/* ---------- RENDER ---------- */
+function renderTasks(type, tasks){
+  const container = document.getElementById(`${type}-tasks`);
+  const today = new Date().toDateString();
+  container.innerHTML = tasks.map(t=>{
+    const done = currentData.some(d=>d.routine_type===type && d.task_id===t.id && d.completed && d.date===today);
+    return `
+      <div class="task-item rounded-lg p-4 shadow-lg border-l-4 border-blue-400 ${done?'completed':''}">
+        <div class="flex items-center space-x-4">
+          <input type="checkbox" class="checkbox" ${done?'checked':''}
+                 onchange="toggleTask('${type}','${t.id}',this.checked)">
+          <div class="flex-1">
+            <div class="font-semibold text-blue-300 text-sm">${t.time}</div>
+            <div class="text-slate-200 mt-1">${t.task}</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ---------- TOGGLE ---------- */
+async function toggleTask(routineType, taskId, completed){
+  if(isLoading) return; isLoading=true;
+  const today = new Date().toDateString();
+  const idx = currentData.findIndex(d=>d.routine_type===routineType && d.task_id===taskId && d.date===today);
+  if(idx>-1){
+    currentData[idx].completed = completed;
+  }else if(completed){
+    currentData.push({routine_type:routineType, task_id:taskId, completed:true, date:today});
+  }
+  save();
+  renderTasks(routineType, routineType==='college'?collegeRoutine:holidayRoutine);
+  updateProgress(routineType);
+  isLoading=false;
+}
+
+/* ---------- PROGRESS ---------- */
+function updateProgress(type){
+  const tasks = type==='college'?collegeRoutine:holidayRoutine;
+  const today = new Date().toDateString();
+  const done = currentData.filter(d=>d.routine_type===type && d.completed && d.date===today).length;
+  const total = tasks.length;
+  const pct = total?Math.round(done/total*100):0;
+  const el = document.getElementById(`${type}-progress`);
+  el.innerHTML = `
+    <div class="mb-2 text-slate-200">Progress: ${done}/${total} tasks completed</div>
+    <div class="w-full bg-slate-700 rounded-full h-3 border border-slate-600">
+      <div class="progress-bar h-3 rounded-full transition-all duration-500" style="width:${pct}%"></div>
+    </div>
+    <div class="mt-2 text-sm text-slate-300">${pct}% Complete</div>`;
+}
+
+/* ---------- THEME (optional) ---------- */
+function applyConfig(cfg){
+  document.getElementById('main-title').textContent = cfg.main_title||defaultConfig.main_title;
+  document.getElementById('college-title').textContent = cfg.college_title||defaultConfig.college_title;
+  document.getElementById('holiday-title').textContent = cfg.holiday_title||defaultConfig.holiday_title;
+}
+applyConfig(defaultConfig);
+</script>
+</html>
