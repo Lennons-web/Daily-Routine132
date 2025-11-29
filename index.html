@@ -1,304 +1,513 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Daily Schedule & To-Do</title>
-
-  <!-- Tailwind CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Daily Bliss Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
-
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
   <style>
-    body { box-sizing: border-box; overflow-x: hidden; }
-    .task-item { transition: all .3s ease; background: rgba(30,41,59,.8); border:1px solid rgba(71,85,105,.3); }
-    .task-item:hover { transform:translateY(-2px); box-shadow:0 8px 25px rgba(0,0,0,.3); background:rgba(30,41,59,.9); }
-    .completed { opacity:.6; text-decoration:line-through; background:rgba(15,23,42,.6); }
-    .checkbox { width:20px;height:20px;cursor:pointer;transition:all .2s ease; accent-color:#3b82f6; }
-    .checkbox:checked{transform:scale(1.1);}
-    .fade-in{animation:fadeIn .5s ease-in;}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-    .btn-primary{background:linear-gradient(135deg,#1e40af,#3730a3);border:1px solid rgba(59,130,246,.3);}
-    .btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(59,130,246,.4);background:linear-gradient(135deg,#1d4ed8,#4338ca);}
-    .btn-secondary{background:linear-gradient(135deg,#059669,#047857);border:1px solid rgba(16,185,129,.3);}
-    .btn-secondary:hover{background:linear-gradient(135deg,#047857,#065f46);box-shadow:0 8px 20px rgba(16,185,129,.4);}
-    .progress-bar{background:linear-gradient(90deg,#3b82f6,#8b5cf6);}
-    @view-transition { navigation: auto; }
-
-    /* ==== TO-DO LIST ==== */
-    .todo-container { background: #0d1b2a; padding: 20px; border-radius: 16px; width: 90%; max-width: 500px; box-shadow:0 5px 15px rgba(0,0,0,0.3); margin:20px auto; }
-    .input-group { display: flex; margin-bottom: 10px; }
-    #taskInput { flex: 1; padding: 10px; border-radius: 10px 0 0 10px; border:none; outline:none; background: #1e3c72; color:#fff; }
-    #addBtn { padding:10px 20px; border:none; background:#ffce00; color:#0d1b2a; font-weight:bold; border-radius:0 10px 10px 0; cursor:pointer; transition:0.3s; }
-    #addBtn:hover { background:#ffd600; }
-    #tasksContainer { display:flex; flex-direction:column; width:90%; max-width:500px; margin:0 auto; }
-    .todo-task { background: #2a5298; padding:10px; margin-bottom:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; color:#fff; transform:translateY(-20px); opacity:0; transition: all 0.4s ease; }
-    .todo-task.show { transform:translateY(0); opacity:1; }
-    .todo-task.completed { text-decoration: line-through; color: #90ee90; }
-    .done-btn { background:#22c55e; border:none; color:#fff; padding:5px 10px; border-radius:8px; cursor:pointer; margin-left:10px; transition:0.3s; }
-    .done-btn:hover { background:#16a34a; }
-
-    /* ==== BACKGROUND CANVAS ==== */
-    #bgCanvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
-
-    /* ==== ICON HOVER ==== */
-    .btn-primary svg, .btn-secondary svg, .bg-yellow-500 svg {
-      transition: transform 0.3s ease;
+    :root {
+      --weekday: #6366f1;   /* Indigo */
+      --weekend: #f59e0b;   /* Amber */
+      --holiday: #06b6d4;   /* Cyan */
     }
-    .btn-primary:hover svg, .btn-secondary:hover svg, .bg-yellow-500:hover svg {
-      transform: scale(1.15);
+    body { transition: background 1s ease; min-height: 100vh; }
+    .mode-weekday { background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); }
+    .mode-weekend { background: linear-gradient(135deg, #ff8a00 0%, #e52e71 100%); }
+    .mode-holiday { background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%); }
+
+    .card { 
+      background: rgba(255,255,255,0.98); 
+      backdrop-filter: blur(16px); 
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    .card.visible { transform: translateY(0); opacity: 1; }
+
+    .day-btn {
+      transition: all 0.6s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+      transform: scale(1) rotate(0deg);
+    }
+    .day-btn.active {
+      transform: scale(1.15) rotate(4deg);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
     }
 
-    /* ==== MAIN MENU CENTERING ==== */
-    #main-menu { animation: fadeInUp 0.8s ease-out; }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
+    .task-item {
+      transition: all 0.4s ease;
+      transform: translateX(0);
+    }
+    .task-item:hover { transform: translateX(8px); }
+
+    .checked { 
+      text-decoration: line-through; 
+      opacity: 0.5; 
+      transform: scale(0.95);
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #34d399);
+      transition: width 0.6s ease;
+    }
+
+    @keyframes celebrate {
+      0%,100% { transform: scale(1) rotate(0); }
+      25% { transform: scale(1.3) rotate(-10deg); }
+      50% { transform: scale(1.3) rotate(10deg); }
+      75% { transform: scale(1.3) rotate(-5deg); }
+    }
+    .celebrate { animation: celebrate 0.8s ease; }
+    
+    @keyframes gentle-pulse {
+      0%, 100% { 
+        background-color: rgba(255, 255, 255, 1);
+        transform: scale(1);
+      }
+      50% { 
+        background-color: rgba(147, 197, 253, 0.3);
+        transform: scale(1.02);
+      }
+    }
+    .alarm-ringing {
+      animation: gentle-pulse 2s infinite !important;
+      border-left: 4px solid #3b82f6 !important;
     }
   </style>
 </head>
+<body class="text-gray-800 mode-weekday">
 
-<!-- BODY: removed justify-start and padding to allow full centering -->
-<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 text-slate-100 p-0">
+  <div class="container mx-auto p-6 max-w-5xl">
+    <h1 class="text-5xl md:text-6xl font-black text-center text-white mt-12 mb-4 drop-shadow-2xl">
+      Daily Bliss Tracker <span id="modeEmoji">Focus Mode</span>
+    </h1>
+    <p class="text-center text-white text-xl mb-10 font-medium" id="dateToday"></p>
 
-  <canvas id="bgCanvas"></canvas>
+    <!-- Mode Switcher -->
+    <div class="flex justify-center gap-6 mb-10 flex-wrap">
+      <button onclick="setMode('weekday')"   class="day-btn px-8 py-4 rounded-2xl text-white font-bold text-xl shadow-xl active">
+        <span>Weekday</span>
+      </button>
+      <button onclick="setMode('weekend')"  class="day-btn px-8 py-4 rounded-2xl text-white font-bold text-xl shadow-xl">
+        <span>Weekend</span>
+      </button>
+      <button onclick="setMode('holiday')"  class="day-btn px-8 py-4 rounded-2xl text-white font-bold text-xl shadow-xl">
+        <span>Holiday</span>
+      </button>
+    </div>
 
-  <!-- MAIN MENU - PERFECTLY CENTERED -->
-  <section id="main-menu" class="w-full min-h-screen flex items-center justify-center p-4">
-    <div class="w-full max-w-2xl mx-auto bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-2xl p-8 fade-in text-center">
-      <h1 id="main-title" class="text-4xl md:text-5xl font-bold text-slate-100 mb-12 drop-shadow-lg">Daily Routine</h1>
-      <div class="grid md:grid-cols-3 gap-6 max-w-lg mx-auto">
-        <!-- College Day -->
-        <button onclick="showRoutine('college')" class="btn-primary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all">
-          <svg class="w-10 h-10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h-4m-6 0H5m7-7h.01M12 9h.01M12 13h.01"></path>
-          </svg>
-          College Day
+    <div id="mainCard" class="card rounded-3xl shadow-2xl p-8 md:p-12">
+      <div id="taskList" class="space-y-4"></div>
+
+      <!-- Add Task -->
+      <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <input type="text" id="newTaskInput" placeholder="What will make today amazing?" 
+               class="col-span-1 px-6 py-5 rounded-2xl border-2 border-gray-200 focus:outline-none focus:border-current text-lg"/>
+        <input type="time" id="newTaskTime" class="px-6 py-5 rounded-2xl border-2 border-gray-200 text-lg"/>
+        <button onclick="addTask()" class="px-10 py-5 rounded-2xl text-white font-bold text-xl shadow-lg hover:shadow-2xl transition">
+          <span>Add Task</span>
         </button>
+      </div>
 
-        <!-- Holiday -->
-        <button onclick="showRoutine('holiday')" class="btn-secondary flex flex-col items-center justify-center text-white font-semibold py-8 px-6 rounded-xl shadow-lg transition-all">
-          <svg class="w-10 h-10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          Holiday
-        </button>
+      <!-- Stats -->
+      <div class="mt-12 grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div class="text-center p-8 rounded-3xl text-white shadow-2xl">
+          <div class="text-5xl font-black" id="todayCompleted">0 / 0</div>
+          <p class="mt-3 text-xl opacity-90">Today's Progress</p>
+        </div>
+        <div class="text-center p-8 rounded-3xl text-white shadow-2xl">
+          <div class="text-5xl font-black" id="streakCount">0</div>
+          <p class="mt-3 text-3xl">Day Streak</p>
+        </div>
+        <div class="text-center p-8 rounded-3xl text-white shadow-2xl">
+          <div class="text-5xl font-black" id="totalDays">0</div>
+          <p class="mt-3 text-xl opacity-90">Days Tracked</p>
+        </div>
+      </div>
 
-        <!-- To-Do List -->
-        <button onclick="showTodoList()" class="bg-yellow-500 hover:bg-yellow-400 flex flex-col items-center justify-center text-black font-semibold py-8 px-6 rounded-xl shadow-lg transition-all">
-          <svg class="w-10 h-10 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
-          </svg>
-          To-Do List
+      <div class="text-center mt-12">
+        <button onclick="showHistory()" class="text-2xl font-bold underline hover:no-underline transition">
+          <span>View Your Beautiful History</span>
         </button>
       </div>
     </div>
-  </section>
+  </div>
 
-  <!-- COLLEGE ROUTINE -->
-  <section id="college-routine" class="hidden fade-in w-full max-w-2xl mx-auto mt-6">
-    <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's College Routine</h1>
-      <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600">Back</button>
-    </div>
-    <div id="college-tasks" class="space-y-4"></div>
-    <div class="mt-8 text-center"><div id="college-progress" class="text-lg font-semibold text-slate-200"></div></div>
-  </section>
-
-  <!-- HOLIDAY ROUTINE -->
-  <section id="holiday-routine" class="hidden fade-in w-full max-w-2xl mx-auto mt-6">
-    <div class="flex items-center justify-between mb-8">
-      <h1 class="text-3xl font-bold text-slate-100 drop-shadow-lg">Today's Holiday Routine</h1>
-      <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-colors border border-slate-600">Back</button>
-    </div>
-    <div id="holiday-tasks" class="space-y-4"></div>
-    <div class="mt-8 text-center"><div id="holiday-progress" class="text-lg font-semibold text-slate-200"></div></div>
-  </section>
-
-  <!-- TO-DO LIST -->
-  <section id="todo-section" class="hidden w-full max-w-2xl mx-auto mt-6 fade-in">
-    <h1 class="text-3xl font-bold text-yellow-400 mb-4 text-center">To-Do List</h1>
-    <div class="todo-container">
-      <div class="input-group">
-        <input type="text" id="taskInput" placeholder="Add a new task..." />
-        <button id="addBtn">Add</button>
+  <!-- History Modal -->
+  <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-80 hidden flex items-center justify-center z-50 p-6">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-6xl w-full max-h-screen overflow-y-auto p-10">
+      <h2 class="text-5xl font-black text-center mb-10">Your Satisfaction Wall</h2>
+      <div id="historyCalendar" class="grid grid-cols-7 gap-4 text-center"></div>
+      <div class="text-center mt-12">
+        <button onclick="closeHistory()" class="px-12 py-5 bg-gray-800 text-white text-xl rounded-2xl hover:bg-gray-900 transition">
+          Close & Keep Shining
+        </button>
       </div>
     </div>
-    <div id="tasksContainer"></div>
-    <div class="text-center mt-4">
-      <button onclick="showMainMenu()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg border border-slate-600">Back</button>
-    </div>
-  </section>
+  </div>
 
   <script>
-    /* ---------- DATA ---------- */
-    const collegeRoutine = [
-      { id: 'c1', time: '6:30 - 7:00 AM', task: 'Wake up and fresh up' },
-      { id: 'c2', time: '7:00 - 9:20 AM', task: 'Study (Reading and Assignments)' },
-      { id: 'c3', time: '9:30 - 10:00 AM', task: 'Breakfast and ready for school' },
-      { id: 'c4', time: '10:00 AM - 4:45 PM', task: 'College time' },
-      { id: 'c5', time: '4:45 - 5:30 PM', task: 'Rest and lunch time' },
-      { id: 'c6', time: '5:30 - 7:00 PM', task: 'Engineering practice time' },
-      { id: 'c7', time: '7:00 - 7:45 PM', task: 'Homework time' },
-      { id: 'c8', time: '7:45 - 8:45 PM', task: 'Dinner time' },
-      { id: 'c9', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
-      { id: 'c10', time: '10:45 - 11:00 PM', task: 'Break time' },
-      { id: 'c11', time: '11:00 PM', task: 'Sleeping time' }
-    ];
-    const holidayRoutine = [
-      { id: 'h1', time: '7:00 - 7:30 AM', task: 'Wake up and fresh up' },
-      { id: 'h2', time: '7:30 - 10:30 AM', task: 'Study (homework and assignment)' },
-      { id: 'h3', time: '10:30 - 11:30 AM', task: 'Breakfast time' },
-      { id: 'h4', time: '11:30 AM - 1:00 PM', task: 'Engineering practice' },
-      { id: 'h5', time: '1:00 - 1:15 PM', task: 'Short break' },
-      { id: 'h6', time: '1:15 - 4:00 PM', task: 'Study (Reading and Assignments)' },
-      { id: 'h7', time: '4:00 - 4:45 PM', task: 'Lunch' },
-      { id: 'h8', time: '4:45 - 6:15 PM', task: 'Engineering practice' },
-      { id: 'h9', time: '6:15 - 6:30 PM', task: 'Short rest' },
-      { id: 'h10', time: '6:30 - 7:45 PM', task: 'Study (Reading and Assignments)' },
-      { id: 'h11', time: '7:45 - 8:45 PM', task: 'Dinner' },
-      { id: 'h12', time: '8:45 - 10:45 PM', task: 'Study (Reading and Assignments)' },
-      { id: 'h13', time: '10:45 - 11:00 PM', task: 'Break' },
-      { id: 'h14', time: '11:00 PM', task: 'Sleep' }
-    ];
+    const data = {
+      templates: {
+        weekday: ['Wake at 6 AM', 'Exercise 30 min', 'Meditate', 'Deep work block', 'Read 20 pages', 'Plan tomorrow'],
+        weekend: ['Sleep in', 'Long breakfast', 'Walk in nature', 'Call family', 'Hobby time', 'Movie night'],
+        holiday: ['No alarm', 'Favorite meal', 'Long bath', 'Read for fun', 'Dance party', 'Gratitude journal']
+      },
+      history: {}
+    };
 
-    /* ---------- STATE ---------- */
-    let currentData = [];
-    const STORAGE_KEY = 'daily-routine-data';
-    const today = new Date().toDateString();
-    try { currentData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { currentData = []; }
-    currentData = currentData.filter(d => d.date === today);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
+    let currentMode = 'weekday';
+    const STORAGE_KEY = 'dailyBlissV4';
+    let alarmAudioContext = null;
 
-    /* ---------- SHOW/HIDE ---------- */
-    let currentRoutineType = '';
-    function showRoutine(type) {
-      currentRoutineType = type;
-      document.getElementById('main-menu').classList.add('hidden');
-      document.getElementById('college-routine').classList.toggle('hidden', type !== 'college');
-      document.getElementById('holiday-routine').classList.toggle('hidden', type !== 'holiday');
-      document.getElementById('todo-section').classList.add('hidden');
-      renderTasks(type, type === 'college' ? collegeRoutine : holidayRoutine);
-      updateProgress(type);
-    }
-    function showMainMenu() {
-      document.getElementById('main-menu').classList.remove('hidden');
-      document.getElementById('college-routine').classList.add('hidden');
-      document.getElementById('holiday-routine').classList.add('hidden');
-      document.getElementById('todo-section').classList.add('hidden');
-      currentRoutineType = '';
-    }
-    function showTodoList() {
-      document.getElementById('main-menu').classList.add('hidden');
-      document.getElementById('college-routine').classList.add('hidden');
-      document.getElementById('holiday-routine').classList.add('hidden');
-      document.getElementById('todo-section').classList.remove('hidden');
+    // Load saved data
+    if (localStorage.getItem(STORAGE_KEY)) {
+      Object.assign(data, JSON.parse(localStorage.getItem(STORAGE_KEY)));
     }
 
-    /* ---------- RENDER ROUTINE TASKS ---------- */
-    function renderTasks(type, tasks) {
-      const container = document.getElementById(`${type}-tasks`);
-      container.innerHTML = tasks.map(t => {
-        const done = currentData.some(d => d.routine_type === type && d.task_id === t.id && d.completed && d.date === today);
-        return `<div class="task-item rounded-lg p-4 shadow-lg border-l-4 border-blue-400 ${done ? 'completed' : ''}">
-          <div class="flex items-center space-x-4">
-            <input type="checkbox" class="checkbox" ${done ? 'checked' : ''}
-              onchange="toggleTask('${type}','${t.id}',this.checked)">
-            <div class="flex-1">
-              <div class="font-semibold text-blue-300 text-sm">${t.time}</div>
-              <div class="text-slate-200 mt-1">${t.task}</div>
-            </div>
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('dateToday').innerHTML = new Date().toLocaleDateString('en-US', {
+      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+    });
+
+    function setMode(mode) {
+      if (currentMode === mode) return;
+      
+      currentMode = mode;
+      document.body.className = `mode-${mode}`;
+      
+      const emojis = { weekday: 'Focus Mode', weekend: 'Chill Mode', holiday: 'Magic Mode' };
+      document.getElementById('modeEmoji').textContent = emojis[mode];
+      
+      document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      const colors = {
+        weekday: 'from-indigo-500 to-purple-600',
+        weekend: 'from-orange-500 to-pink-600',
+        holiday: 'from-cyan-500 to-purple-600'
+      };
+      const card = document.getElementById('mainCard');
+      card.className = 'card rounded-3xl shadow-2xl p-8 md:p-12 visible';
+      
+      const stats = document.querySelectorAll('.grid > div');
+      stats.forEach((s, i) => {
+        s.className = `text-center p-8 rounded-3xl text-white shadow-2xl bg-gradient-to-br ${colors[mode]}`;
+      });
+      
+      const addBtn = document.querySelector('button[onclick="addTask()"]');
+      addBtn.className = `px-10 py-5 rounded-2xl text-white font-bold text-xl shadow-lg hover:shadow-2xl transition bg-gradient-to-r ${colors[mode]}`;
+      
+      loadTasks();
+    }
+
+    function parseTask(taskStr) {
+      const parts = taskStr.split('|||');
+      return { text: parts[0], time: parts[1] || null };
+    }
+
+    function formatTask(text, time) {
+      return time ? `${text}|||${time}` : text;
+    }
+
+    function loadTasks() {
+      const list = document.getElementById('taskList');
+      list.innerHTML = '';
+      const rawTasks = data.templates[currentMode] || [];
+      const key = `${today}_${currentMode}`;
+      const done = data.history[key] || [];
+
+      rawTasks.forEach((rawTask, i) => {
+        const { text, time } = parseTask(rawTask);
+        const checked = done[i] || false;
+
+        const item = document.createElement('div');
+        item.className = 'task-item flex flex-col gap-3 bg-gray-50 p-6 rounded-2xl shadow-md';
+        item.id = `task-${i}`;
+
+        const progressHTML = time ? `
+          <div class="progress-bar">
+            <div class="progress-fill" id="progress-${i}"></div>
           </div>
-        </div>`;
-      }).join('');
-    }
-    function toggleTask(routineType, taskId, completed) {
-      const idx = currentData.findIndex(d => d.routine_type === routineType && d.task_id === taskId && d.date === today);
-      if (idx > -1) currentData[idx].completed = completed;
-      else if (completed) currentData.push({ routine_type: routineType, task_id: taskId, completed: true, date: today });
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(currentData));
-      renderTasks(routineType, routineType === 'college' ? collegeRoutine : holidayRoutine);
-      updateProgress(routineType);
-    }
-    function updateProgress(type) {
-      const tasks = type === 'college' ? collegeRoutine : holidayRoutine;
-      const done = currentData.filter(d => d.routine_type === type && d.completed && d.date === today).length;
-      const total = tasks.length;
-      const pct = total ? Math.round(done / total * 100) : 0;
-      const el = document.getElementById(`${type}-progress`);
-      el.innerHTML = `
-        <div class="mb-2 text-slate-200">Progress: ${done}/${total} tasks completed</div>
-        <div class="w-full bg-slate-700 rounded-full h-3 border border-slate-600">
-          <div class="progress-bar h-3 w-[${pct}%] rounded-full transition-all duration-500"></div>
-        </div>
-        <div class="mt-2 text-sm text-slate-300">${pct}% Complete</div>`;
-    }
+          <div class="text-sm text-gray-600 text-right" id="timeLabel-${i}"></div>
+        ` : '';
 
-    /* ---------- TO-DO LIST ---------- */
-    const taskInput = document.getElementById('taskInput');
-    const addBtn = document.getElementById('addBtn');
-    const tasksContainer = document.getElementById('tasksContainer');
-    let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        item.innerHTML = `
+          <div class="flex items-center gap-5">
+            <input type="checkbox" ${checked?'checked':''} onchange="toggle(${i})" 
+                   class="w-8 h-8 rounded-full focus:ring-4 focus:ring-current"/>
+            <span class="text-xl flex-1 ${checked?'checked':''}">${text}</span>
+            ${time ? `<span class="text-lg font-medium text-indigo-600">${time}</span>` : ''}
+            <button onclick="removeTask(${i})" class="text-gray-400 hover:text-red-600 text-2xl cursor-pointer transition">
+              <span>Remove</span>
+            </button>
+          </div>
+          ${progressHTML}
+        `;
+        list.appendChild(item);
 
-    function saveTasks() { localStorage.setItem('tasks', JSON.stringify(tasks)); }
-    function renderTodoTasks() {
-      tasksContainer.innerHTML = '';
-      if (tasks.length === 0) { tasksContainer.style.display = 'none'; return; }
-      tasksContainer.style.display = 'flex';
-      tasks.forEach((task, index) => {
-        const div = document.createElement('div');
-        div.className = 'todo-task' + (task.completed ? ' completed' : '');
-        div.innerHTML = `${task.text} <button class='done-btn'>Done</button>`;
-        tasksContainer.appendChild(div);
-        setTimeout(() => div.classList.add('show'), 50 * (index + 1));
-
-        const doneBtn = div.querySelector('.done-btn');
-        doneBtn.addEventListener('click', () => {
-          tasks.splice(index, 1); saveTasks(); renderTodoTasks();
-        });
-        div.addEventListener('click', e => {
-          if (e.target !== doneBtn) { task.completed = !task.completed; saveTasks(); renderTodoTasks(); }
-        });
+        if (time && !checked) {
+          startCountdown(i, time);
+        }
       });
+      updateStats();
     }
+
+    function startCountdown(index, timeStr) {
+      const update = () => {
+        const now = new Date();
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const target = new Date();
+        target.setHours(hours, minutes, 0, 0);
+
+        // Check if target time has passed today
+        if (now >= target) {
+          triggerAlarm(index);
+          return;
+        }
+
+        const diffMs = target - now;
+        const totalMinutes = diffMs / 60000;
+        const percent = Math.max(0, Math.min(100, (1 - totalMinutes / (24*60)) * 100));
+
+        const prog = document.getElementById(`progress-${index}`);
+        const label = document.getElementById(`timeLabel-${index}`);
+        if (prog) prog.style.width = percent + '%';
+
+        const hrs = Math.floor(totalMinutes / 60);
+        const mins = Math.floor(totalMinutes % 60);
+        if (label) label.textContent = hrs ? `${hrs}h ${mins}m left` : `${mins}m left`;
+      };
+
+      update();
+      const interval = setInterval(update, 60000); // update every minute
+      // Store interval ID so we can clear it when task is completed
+      if (!window.alarmIntervals) window.alarmIntervals = [];
+      window.alarmIntervals[index] = interval;
+    }
+
+    function playGentleAlarm() {
+      try {
+        if (!alarmAudioContext) {
+          alarmAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        const now = alarmAudioContext.currentTime;
+        const oscillator = alarmAudioContext.createOscillator();
+        const gainNode = alarmAudioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(alarmAudioContext.destination);
+        
+        // Gentle wind chime-like sound
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(523.25, now); // C5
+        oscillator.frequency.setValueAtTime(659.25, now + 0.3); // E5
+        oscillator.frequency.setValueAtTime(783.99, now + 0.6); // G5
+        
+        // Soft fade in and out
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.2, now + 0.1);
+        gainNode.gain.linearRampToValueAtTime(0.2, now + 0.8);
+        gainNode.gain.linearRampToValueAtTime(0, now + 1.0);
+        
+        oscillator.start(now);
+        oscillator.stop(now + 1.0);
+        
+        // Repeat after a pleasant delay
+        setTimeout(() => {
+          if (window.ringingTasks && window.ringingTasks.size > 0) {
+            playGentleAlarm();
+          }
+        }, 3000); // Repeat every 3 seconds instead of being constant
+      } catch (error) {
+        console.log('Audio error:', error);
+      }
+    }
+
+    function triggerAlarm(index) {
+      // Store that this task is ringing
+      if (!window.ringingTasks) window.ringingTasks = new Set();
+      window.ringingTasks.add(index);
+
+      // Visual alert - much gentler now
+      const item = document.getElementById(`task-${index}`);
+      if (item) {
+        item.classList.add('alarm-ringing');
+      }
+
+      // Play gentle sound
+      playGentleAlarm();
+
+      // Browser notification if available
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('Daily Bliss Tracker', {
+          body: `Time for: ${parseTask(data.templates[currentMode][index]).text}`,
+          icon: '/favicon.ico'
+        });
+      }
+    }
+
+    function stopAlarmIfRinging(index) {
+      if (window.ringingTasks && window.ringingTasks.has(index)) {
+        window.ringingTasks.delete(index);
+        
+        // Stop visual alert
+        const item = document.getElementById(`task-${index}`);
+        if (item) {
+          item.classList.remove('alarm-ringing');
+        }
+      }
+      // Clear countdown interval
+      if (window.alarmIntervals && window.alarmIntervals[index]) {
+        clearInterval(window.alarmIntervals[index]);
+      }
+    }
+
+    function toggle(i) {
+      const key = `${today}_${currentMode}`;
+      if (!data.history[key]) data.history[key] = [];
+      data.history[key][i] = !data.history[key][i];
+      
+      stopAlarmIfRinging(i); // Stops ringing when checked
+      save();
+      loadTasks();
+      if (data.history[key].filter(x=>x).length === data.templates[currentMode].length) {
+        document.getElementById('mainCard').classList.add('celebrate');
+        setTimeout(()=>document.getElementById('mainCard').classList.remove('celebrate'), 1000);
+      }
+    }
+
     function addTask() {
-      const text = taskInput.value.trim();
-      if (!text) return;
-      tasks.push({ text, completed: false }); saveTasks(); renderTodoTasks(); taskInput.value = '';
+      const input = document.getElementById('newTaskInput');
+      const timeInput = document.getElementById('newTaskTime');
+      const text = input.value.trim();
+      const time = timeInput.value || null;
+      if (text) {
+        const formatted = formatTask(text, time);
+        data.templates[currentMode].push(formatted);
+        input.value = '';
+        timeInput.value = '';
+        save();
+        loadTasks();
+      }
     }
-    addBtn.addEventListener('click', addTask);
-    taskInput.addEventListener('keypress', e => { if (e.key === 'Enter') addTask(); });
-    renderTodoTasks();
 
-    /* ---------- BACKGROUND PARTICLES ---------- */
-    const canvas = document.getElementById('bgCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-    const particles = [];
-    const particleCount = 120;
-    for (let i = 0; i < particleCount; i++) {
-      particles.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        radius: Math.random() * 3 + 1,
-        dx: (Math.random() - 0.5) * 1.5,
-        dy: (Math.random() - 0.5) * 1.5
-      });
+    function removeTask(i) {
+      stopAlarmIfRinging(i);
+      data.templates[currentMode].splice(i, 1);
+      const key = `${today}_${currentMode}`;
+      if (data.history[key]) data.history[key].splice(i, 1);
+      save();
+      loadTasks();
     }
-    function animate() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach(p => {
-        p.x += p.dx; p.y += p.dy;
-        if (p.x < 0 || p.x > canvas.width) p.dx *= -1;
-        if (p.y < 0 || p.y > canvas.height) p.dy *= -1;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(255, 206, 0, 0.6)';
-        ctx.fill();
-      });
-      requestAnimationFrame(animate);
+
+    function updateStats() {
+      const key = `${today}_${currentMode}`;
+      const done = (data.history[key]||[]).filter(x=>x).length;
+      const total = data.templates[currentMode].length;
+      document.getElementById('todayCompleted').textContent = `${done} / ${total}`;
+
+      // Streak logic
+      let streak = 0;
+      let checkDate = new Date();
+      for (let i = 0; i < 365; i++) {
+        const d = checkDate.toISOString().split('T')[0];
+        const isWeekend = checkDate.getDay() === 0 || checkDate.getDay() === 6;
+        const mode = isWeekend ? 'weekend' : 'weekday';
+        const k = `${d}_${mode}`;
+        const hist = data.history[k];
+        if (hist && hist.filter(x=>x).length === data.templates[mode].length && hist.length > 0) {
+          streak++;
+        } else if (i > 0) break;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      document.getElementById('streakCount').textContent = streak;
+      document.getElementById('totalDays').textContent = Object.keys(data.history).filter(k=>data.history[k].length>0).length;
     }
-    animate();
-    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+    function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+    function showHistory() {
+      const cal = document.getElementById('historyCalendar');
+      cal.innerHTML = '';
+      const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+      days.forEach(d=> {
+        const h = document.createElement('div');
+        h.className = 'font-bold text-gray-600';
+        h.textContent = d;
+        cal.appendChild(h);
+      });
+
+      // Fixed calendar alignment
+      const today = new Date();
+      const start = new Date(today);
+      start.setDate(today.getDate() - 90);
+      
+      // Find the most recent Sunday for proper alignment
+      while (start.getDay() !== 0) {
+        start.setDate(start.getDate() - 1);
+      }
+
+      // Now fill the calendar starting from that Sunday
+      for (let i = 0; i < 98; i++) {
+        const d = new Date(start);
+        d.setDate(start.getDate() + i);
+        const dateStr = d.toISOString().split('T')[0];
+        const day = d.getDay();
+        const isWeekend = day===0 || day===6;
+        const mode = isWeekend ? 'weekend' : 'weekday';
+        const key = `${dateStr}_${mode}`;
+        const hist = data.history[key];
+        const rawTasks = data.templates[mode] || [];
+        const total = rawTasks.length;
+        const done = hist ? hist.filter(x=>x).length : 0;
+        const pct = total > 0 ? Math.round(done/total*100) : 0;
+
+        const cell = document.createElement('div');
+        cell.className = 'aspect-square flex flex-col items-center justify-center rounded-2xl text-white font-bold text-lg shadow-lg';
+        
+        if (pct === 100 && total > 0) {
+          cell.className += ' bg-gradient-to-br from-green-500 to-emerald-600 text-3xl';
+          cell.innerHTML = `<span>100%</span><span class="text-4xl mt-1">Perfect</span>`;
+        } else if (pct >= 70) {
+          cell.className += ' bg-gradient-to-br from-yellow-500 to-orange-600';
+          cell.textContent = `${pct}%`;
+        } else if (pct > 0) {
+          cell.className += ' bg-gradient-to-br from-red-500 to-pink-600';
+          cell.textContent = `${pct}%`;
+        } else {
+          cell.className = 'bg-gray-200 text-gray-400';
+          cell.textContent = dateStr.slice(8);
+        }
+        cal.appendChild(cell);
+      }
+      document.getElementById('historyModal').classList.remove('hidden');
+    }
+
+    function closeHistory() {
+      document.getElementById('historyModal').classList.add('hidden');
+    }
+
+    // Request notification permission on load
+    if ('Notification' in window) {
+      Notification.requestPermission();
+    }
+
+    // Init
+    const todayDay = new Date().getDay();
+    const autoMode = (todayDay === 0 || todayDay === 6) ? 'weekend' : 'weekday';
+    setMode(autoMode || 'weekday');
   </script>
 </body>
 </html>
